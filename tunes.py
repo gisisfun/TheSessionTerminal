@@ -33,7 +33,7 @@ def main():
     try:
         tunes_df = pd.read_csv(os.path.join(my_wd,'tunes.csv'))
         sets_df = pd.read_csv(os.path.join(my_wd,'sets.csv'))
-        print(sets_df.columns)
+        sets_df['name'] = sets_df['name'].apply( lambda x : "The " + x[:len(x)-5] if x[-5:] == ", The" else x )
         alias_df = pd.read_csv(os.path.join(my_wd,'aliases.csv'))
         alias_df['name'] = alias_df['name'].apply( lambda x : "The " + x[:len(x)-5] if x[-5:] == ", The" else x )
         alias_df.alias = alias_df.alias.str.replace("'", "")
@@ -44,7 +44,7 @@ def main():
         alias_df = pd.concat([tunes,alias_df])
         # add in tune type
         alias_df = alias_df. merge(tunes_df[['tune_id','type']], left_on='tune_id', right_on='tune_id', how='left')
-    
+        recordings_df = pd.read_csv(os.path.join(my_wd,'recordings.csv'))
     except OSError:
         print('One or more files not found')
     
@@ -81,11 +81,13 @@ def main():
         tune = rand_tune(tunes_df)
         tune_id = tune.tune_id
         print(int(tune_id))
-        
+    
     print(tunes_df.loc[tunes_df["tune_id"] == int(tune_id), ["name",'type']].reset_index(drop=True).drop_duplicates().to_string(index=False))
-
     url = base_tune_url + str(tune_id)
     print(url)
+    print('\nartists')   
+    print(recordings_df.loc[recordings_df["tune_id"] == int(tune_id), ["artist"]].reset_index(drop=True).drop_duplicates().to_string(index=False))
+    
 
     in_tunesets = sets_df[sets_df.tune_id == int(tune_id)]
     tunesets = in_tunesets["tuneset"].to_list() 
