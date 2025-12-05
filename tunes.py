@@ -107,7 +107,8 @@ def main():
     print('\nlist of tunes with the keywords <',fred,'>\n')
     print(alias_search.to_string(index=False))
      # user can type in a tune_id from the last step or a 0 value to get a random tune.
-    tune_id = input('tune id:')
+    tune_id = input('\ntune id (0 for random tune):')
+    print('')
     if int(tune_id) < 1:
         tune = rand_tune(tunes_df)
         tune_id = tune.tune_id
@@ -119,9 +120,12 @@ def main():
     url = base_tune_url + str(tune_id)
     print(url)
     # print out a list if artists from recordungs.csv who have recorded the tune.
+    # convert series of artist names to a list after filtering for tune_id
     print('\nlist of artists\n')   
-    recordings = recordings_df.loc[recordings_df["tune_id"] == int(tune_id), ["artist"]].reset_index(drop=True).drop_duplicates().set_index('artist')#.to_string(justify='left', header=False))
-    nothing_to_see = [print(x) for x in recordings.index.to_list()]
+    recordings = recordings_df.loc[recordings_df["tune_id"] == int(tune_id), ["artist"]].reset_index(drop=True).drop_duplicates().set_index('artist')
+    # dataframe series turned into a list, can print thst nicely. messy code that looks nice on screen.
+    nothing_to_see_here = [print(x) for x in recordings.index.to_list()]
+    nothing_to_see_here = None
     # pause screen output for next output.
     enter_key()
     # print list of tunes related by sets.
