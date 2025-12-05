@@ -47,21 +47,21 @@ def enter_key():
 # hi tech spash screen
 def the_session_splash():
     print("""
-                                
-                                
-.---..                          
-  |  |                          
-  |  |--. .-.                   
-  |  |  |(.-'                   
-  '  '  `-`--'                  
- .-.                            
-(   )               o           
- `-.  .-. .--..--.  .  .-. .--. 
-(   )(.-' `--.`--.  | (   )|  | 
- `-'  `--'`--'`--'-' `-`-' '  `-
-                                
-                                                                               
-                                   
+              
+--.--|                              
+  |  |---.,---.                     
+  |  |   ||---'                     
+  `  `   '`---'                     
+                                             
+,---.               o               
+`---.,---.,---.,---..,---.,---.     
+    ||---'`---.`---.||   ||   |     
+`---'`---'`---'`---'``---'`   '     
+                                                             
+--.--               o          |    
+  |  ,---.,---.,-.-..,---.,---.|    
+  |  |---'|    | | |||   |,---||    
+  `  `---'`    ` ' '``   '`---^`---'                                                        
     """)
 
 def main():
@@ -72,20 +72,20 @@ def main():
     # put it all together
     base_tune_url = "http://"+ip_address + ":" + port +  "/tunes/"
     tunes_df, sets_df, alias_df = None,None,None
-    
+    move_the_The = lambda x : "The " + x[:len(x)-5] if x[-5:] == ", The" else x 
     try:
         # load the tunes.csv file and make it reel.
         tunes_df = pd.read_csv(os.path.join(my_wd,'tunes.csv'))
         # load the sets file and do the same.
         sets_df = pd.read_csv(os.path.join(my_wd,'sets.csv'))
-        sets_df['name'] = sets_df['name'].apply( lambda x : "The " + x[:len(x)-5] if x[-5:] == ", The" else x )
+        sets_df['name'] = sets_df['name'].apply( move_the_The )
         # load the alias.csv file and the same stuff.
         alias_df = pd.read_csv(os.path.join(my_wd,'aliases.csv'))
-        alias_df['name'] = alias_df['name'].apply( lambda x : "The " + x[:len(x)-5] if x[-5:] == ", The" else x )
+        alias_df['name'] = alias_df['name'].apply( move_the_The)
         alias_df.alias = alias_df.alias.str.replace("'", "")
         # concatenate tunes and alias dataframes to make it more searchable.
-        tunes_df['name'] = tunes_df['name'].apply( lambda x : "The " + x[:len(x)-5] if x[-5:] == ", The" else x )
-        # clean up bits I don't need.'
+        tunes_df['name'] = tunes_df['name'].apply( move_the_The )
+        # clean up bits I don't need and blend tune and alias names.'
         tunes = tunes_df.copy(deep=True).rename(columns = {'name' : 'alias'}).drop(['setting_id','type','meter','mode','abc','date','username','composer'], axis=1)
         tunes['name'] = tunes['alias']
         alias_df = pd.concat([tunes,alias_df])
@@ -99,11 +99,12 @@ def main():
     # ask the user for a tune name and teturn a list of candidate tunes.    
     the_session_splash()
     fred =  input('tune name:\n')
-    
+    # search for tune name.
     alias_search= alias_df[alias_df.alias.str.contains(fred.strip(),case=False,regex=False)].drop(["alias"],axis=1).drop_duplicates().reset_index(drop=True)
     # add on a webserver url.
     url_list = alias_search["tune_id"].apply(lambda x: f"{base_tune_url}{x}").reset_index(drop = True)
-
+    # print the results.
+    print('\nlist of tunes with the keywords <',fred,'>\n')
     print(alias_search.to_string(index=False))
      # user can type in a tune_id from the last step or a 0 value to get a random tune.
     tune_id = input('tune id:')
@@ -112,13 +113,15 @@ def main():
         tune_id = tune.tune_id
         print(int(tune_id))
         
-    # print out the tune and tupe for the supplied tune_id.
+    # print out the tune and type for the supplied tune_id.
+    
     print(tunes_df.loc[tunes_df["tune_id"] == int(tune_id), ["name",'type']].reset_index(drop=True).drop_duplicates().to_string(index=False))
     url = base_tune_url + str(tune_id)
     print(url)
     # print out a list if artists from recordungs.csv who have recorded the tune.
-    print('\nartists')   
-    print(recordings_df.loc[recordings_df["tune_id"] == int(tune_id), ["artist"]].reset_index(drop=True).drop_duplicates().to_string(index=False))
+    print('\nlist of artists\n')   
+    recordings = recordings_df.loc[recordings_df["tune_id"] == int(tune_id), ["artist"]].reset_index(drop=True).drop_duplicates().set_index('artist')#.to_string(justify='left', header=False))
+    nothing_to_see = [print(x) for x in recordings.index.to_list()]
     # pause screen output for next output.
     enter_key()
     # print list of tunes related by sets.
@@ -131,8 +134,9 @@ def main():
     
         url_list = in_sets["tune_id"].apply(lambda x: f"{base_tune_url}{x}").reset_index(drop = True)
         filtered_sets["url"] = url_list
-        print('\n',len(filtered_sets),'tune(s) in sets')
         
+        print('\nlist of tunes in sets by frequency\n')
+        print('\n',len(filtered_sets),'tune(s) in sets')
         print(filtered_sets.groupby(['name','url']).size().sort_values(ascending=False).iloc[1:].to_string())
     
 main()
