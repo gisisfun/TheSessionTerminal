@@ -1,4 +1,5 @@
-# tunes.py
+# TheSessionTerminal
+the Session website in a tty/bbs format with extra functionality becauseI can't be bothered to look through all of the recording artists and tunes in sets.
 ## Installation Instructions
 
 1. Download the archived thesession.org archives
