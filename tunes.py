@@ -210,7 +210,7 @@ def main():
     print('\n')
     print(base_tune_url + str(tune_id))
     print('\n')
-    print('https://thesession.org/tunes/'+tune_id)
+    print('https://thesession.org/tunes/'+str(tune_id))
     print('\n')
     enter_key()
     
