@@ -62,6 +62,13 @@
 # username
 # composer
 
+# tune_popularity.csv
+# 
+# name	
+# tune_id	
+# tunebooks 
+
+
 import pandas as pd
 import random as rand
 import os
@@ -73,10 +80,12 @@ def rand_tune(session_tunes_df):
     return tunes_row
 
 # the any key (enter)
+
 def enter_key():
-    input('\n enter key to continue\n')
+    input('\nenter key to continue\n')
 
 # hi tech spash screen
+
 def the_session_splash():
     print("""
               
@@ -111,7 +120,7 @@ def main():
     move_the_The = lambda x : "The " + x[:len(x)-5] if x[-5:] == ", The" else x 
     try:
         
-        # load the tunes.csv file and make it reel.
+        # load the tunes.csv file and make it real.
         
         tunes_df = pd.read_csv(os.path.join(my_wd,'tunes.csv'))
         
@@ -120,6 +129,14 @@ def main():
         sets_df = pd.read_csv(os.path.join(my_wd,'sets.csv'))
         sets_df['name'] = sets_df['name'].apply( move_the_The )
         
+        # load the tune_popularity.csv file and the same stuff.
+        
+        tune_popularity_df = pd.read_csv(os.path.join(my_wd,'tune_popularity.csv')).drop(["name"], axis=1)
+        
+        # add in tunebooks
+        
+        sets_df = sets_df. merge(tune_popularity_df[['tune_id','tunebooks']], left_on='tune_id', right_on='tune_id', how='left').sort_values(by=['tunebooks'], ascending=False)
+       
         # load the alias.csv file and the same stuff.
         
         alias_df = pd.read_csv(os.path.join(my_wd,'aliases.csv'))
@@ -143,6 +160,7 @@ def main():
         # load the recordings.csv file
         
         recordings_df = pd.read_csv(os.path.join(my_wd,'recordings.csv'))
+        
     except OSError:
         print('One or more files not found')
     
@@ -150,6 +168,7 @@ def main():
     the_session_splash()
     fred =  input('tune name: (no response to contine to tune id)\n')
     if fred != "":
+        
         # search for tune name if not blank
     
         alias_search= alias_df[alias_df.alias.str.contains(fred.strip(),case=False,regex=False)].drop(["alias"],axis=1).drop_duplicates().reset_index(drop=True)
@@ -220,6 +239,9 @@ def main():
         
         print('\nlist of tunes in sets by frequency\n')
         print('\n',len(filtered_sets),'tune(s) in sets')
+        
+        # exclude 1st row as it is the tune of interest
+        
         print(filtered_sets.groupby(['name','url']).size().sort_values(ascending=False).iloc[1:].to_string())
     
 main()
