@@ -78,7 +78,7 @@ import time
 def rand_tune(session_tunes_df):
     row = rand.randint(1,len(session_tunes_df))
     tunes_row = session_tunes_df.iloc[row]
-    return tunes_row
+    return str(tunes_row.tune_id)
 
 # the any key (enter)
 
@@ -190,10 +190,12 @@ def main():
      
     tune_id = input('\ntune id (0 for random tune):')
     print('')
-    if int(tune_id) < 1:
-        tune = rand_tune(tunes_df)
-        tune_id = tune.tune_id
-        print(int(tune_id))
+    try:
+        if (int(tune_id) < 1):
+            tune_id = rand_tune(tunes_df)
+    except ValueError:
+        tune_id = rand_tune(tunes_df)
+    print(int(tune_id))     
         
     # extract the tune, type, abc and mode for the supplied tune_id for all settings
     
