@@ -72,6 +72,7 @@
 import pandas as pd
 import random as rand
 import os
+import time
 
 # when 0 tune_id just create a random tune_id
 def rand_tune(session_tunes_df):
@@ -138,8 +139,11 @@ def main():
         sets_df = sets_df. merge(tune_popularity_df[['tune_id','tunebooks']], left_on='tune_id', right_on='tune_id', how='left').sort_values(by=['tunebooks'], ascending=False)
        
         # load the alias.csv file and the same stuff.
-        
+        ti_m = os.path.getmtime(os.path.join(my_wd,'aliases.csv'))
         alias_df = pd.read_csv(os.path.join(my_wd,'aliases.csv'))
+        m_ti = time.ctime(ti_m)
+        print('files as modified at',m_ti)
+        
         alias_df['name'] = alias_df['name'].apply( move_the_The)
         alias_df.alias = alias_df.alias.str.replace("'", "")
         
