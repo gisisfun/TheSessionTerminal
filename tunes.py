@@ -209,7 +209,7 @@ def main():
     print("R:",tune_result.loc[0,"type"])
     print("K:",tune_result.loc[0,"mode"])
     print("M:",tune_result.loc[0,"meter"])
-    if pd.isnull(tune_result.loc[0,"composer"]):
+    if not pd.isnull(tune_result.loc[0,"composer"]):
          print("C:",tune_result.loc[0,"composer"])
     print(tune_result.loc[0,"abc"])
     
