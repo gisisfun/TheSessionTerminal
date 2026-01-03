@@ -73,7 +73,6 @@ import pandas as pd
 import random as rand
 import os
 import time
-import math
 
 # when 0 tune_id just create a random tune_id
 def rand_tune(session_tunes_df):
@@ -210,7 +209,7 @@ def main():
     print("R:",tune_result.loc[0,"type"])
     print("K:",tune_result.loc[0,"mode"])
     print("M:",tune_result.loc[0,"meter"])
-    if str(tune_result.loc[0,"composer"])!="nan":
+    if pd.isnull(tune_result.loc[0,"composer"]):
          print("C:",tune_result.loc[0,"composer"])
     print(tune_result.loc[0,"abc"])
     
