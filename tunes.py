@@ -73,6 +73,7 @@ import pandas as pd
 import random as rand
 import os
 import time
+import math
 
 # when 0 tune_id just create a random tune_id
 def rand_tune(session_tunes_df):
@@ -199,14 +200,18 @@ def main():
         
     # extract the tune, type, abc and mode for the supplied tune_id for all settings
     
-    tune_result = tunes_df.loc[tunes_df["tune_id"] == int(tune_id), ["name","type","abc","mode"]].reset_index(drop=True)
-    pd.set_option('display.max_colwidth', None)
+    tune_result = tunes_df.loc[tunes_df["tune_id"] == int(tune_id), ["name","type","abc","mode","meter","composer"]].reset_index(drop=True)
+    
     
     # print only first setting of tune
-    
-    print(tune_result.loc[0,"name"])
-    print(tune_result.loc[0,"type"])
-    print(tune_result.loc[0,"mode"])
+    pd.set_option('display.max_colwidth', None)
+    print('ABC')
+    print("T:",tune_result.loc[0,"name"])
+    print("R:",tune_result.loc[0,"type"])
+    print("K:",tune_result.loc[0,"mode"])
+    print("M:",tune_result.loc[0,"meter"])
+    if str(tune_result.loc[0,"composer"])!="nan":
+         print("C:",tune_result.loc[0,"composer"])
     print(tune_result.loc[0,"abc"])
     
     print('\n')
@@ -251,4 +256,3 @@ def main():
         print(filtered_sets.groupby(['name','url']).size().sort_values(ascending=False).iloc[1:].to_string())
     
 main()
-
