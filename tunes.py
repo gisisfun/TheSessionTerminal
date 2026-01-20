@@ -73,12 +73,41 @@ import pandas as pd
 import random as rand
 import os
 import time
+import re
 
 # when 0 tune_id just create a random tune_id
 def rand_tune(session_tunes_df):
     row = rand.randint(1,len(session_tunes_df))
     tunes_row = session_tunes_df.iloc[row]
     return str(tunes_row.tune_id)
+
+# print file update date and time
+
+def file_update_time(my_wd,fname,verbose):
+    ti_m = os.path.getmtime(os.path.join(my_wd,fname))
+    m_ti = time.ctime(ti_m)
+    if verbose:
+        print(fname,'modified at',m_ti)
+    
+def file_read(my_wd,fname):
+    df = pd.read_csv(os.path.join(my_wd,fname))
+    return df
+
+
+def clean_filename(filename, replacement="_"):
+    # Keep alphanumeric, underscores, hyphens, periods, and spaces
+    # and replace all other with the replacement character.
+    # The pattern [^a-zA-Z0-9_.\s-] matches any character NOT in the set.
+    cleaned_filename = re.sub(r'[^a-zA-Z0-9_.\s-]', replacement, filename)
+    
+    # Optional: ensure no leading/trailing spaces, periods, or replacement chars
+    cleaned_filename = cleaned_filename.strip(f" {replacement}.")
+
+    # Avoid potential issues with completely empty filenames
+    if not cleaned_filename:
+        return "default_name"
+        
+    return cleaned_filename
 
 # the any key (enter)
 
@@ -107,6 +136,7 @@ def the_session_splash():
     """)
 
 def main():
+    debug = False
     my_wd = os.getcwd()
     
     # configure urls for webserver
@@ -122,27 +152,27 @@ def main():
     try:
         
         # load the tunes.csv file and make it real.
-        
-        tunes_df = pd.read_csv(os.path.join(my_wd,'tunes.csv'))
+        file_update_time(my_wd,'tunes.csv',debug)
+        tunes_df = file_read(my_wd,'tunes.csv')
+        tunes_df['date'] = pd.to_datetime(tunes_df['date'])
         
         # load the sets file and do the same.
-        
-        sets_df = pd.read_csv(os.path.join(my_wd,'sets.csv'))
+        file_update_time(my_wd,'sets.csv',debug)
+        sets_df = file_read(my_wd,'sets.csv')
         sets_df['name'] = sets_df['name'].apply( move_the_The )
         
         # load the tune_popularity.csv file and the same stuff.
-        
-        tune_popularity_df = pd.read_csv(os.path.join(my_wd,'tune_popularity.csv')).drop(["name"], axis=1)
+        file_update_time(my_wd,'tune_popularity.csv',debug)
+        tune_popularity_df = file_read(my_wd,'tune_popularity.csv').drop(["name"], axis=1)
         
         # add in tunebooks
         
         sets_df = sets_df. merge(tune_popularity_df[['tune_id','tunebooks']], left_on='tune_id', right_on='tune_id', how='left').sort_values(by=['tunebooks'], ascending=False)
        
         # load the alias.csv file and the same stuff.
-        ti_m = os.path.getmtime(os.path.join(my_wd,'aliases.csv'))
-        alias_df = pd.read_csv(os.path.join(my_wd,'aliases.csv'))
-        m_ti = time.ctime(ti_m)
-        print('files as modified at',m_ti)
+        
+        file_update_time(my_wd,'aliases.csv',debug)
+        alias_df = file_read(my_wd,'aliases.csv')
         
         alias_df['name'] = alias_df['name'].apply( move_the_The)
         alias_df.alias = alias_df.alias.str.replace("'", "")
@@ -162,8 +192,8 @@ def main():
         alias_df = alias_df. merge(tunes_df[['tune_id','type']], left_on='tune_id', right_on='tune_id', how='left')
         
         # load the recordings.csv file
-        
-        recordings_df = pd.read_csv(os.path.join(my_wd,'recordings.csv'))
+        file_update_time(my_wd,'recordings.csv',debug)
+        recordings_df = file_read(my_wd,'recordings.csv')
         
     except OSError:
         print('One or more files not found')
@@ -199,25 +229,48 @@ def main():
         
     # extract the tune, type, abc and mode for the supplied tune_id for all settings
     
-    tune_result = tunes_df.loc[tunes_df["tune_id"] == int(tune_id), ["name","type","abc","mode","meter","composer"]].reset_index(drop=True)
-    
+    tune_result = tunes_df.loc[tunes_df["tune_id"] == int(tune_id), ["name","type","abc","mode","meter","composer","date"]].reset_index(drop=True)
+    tune_result["year"] = tune_result['date'].dt.year
+    print('year',tune_result.loc[0,"year"])
     
     # print only first setting of tune
-    pd.set_option('display.max_colwidth', None)
-    print('ABC')
-    print("T:",tune_result.loc[0,"name"])
-    print("R:",tune_result.loc[0,"type"])
-    print("K:",tune_result.loc[0,"mode"])
-    print("M:",tune_result.loc[0,"meter"])
-    if not pd.isnull(tune_result.loc[0,"composer"]):
-         print("C:",tune_result.loc[0,"composer"])
-    print(tune_result.loc[0,"abc"])
     
-    print('\n')
+    pd.set_option('display.max_colwidth', None)
+    print(tune_result.loc[0,"name"])
+    print('ABC')
+    
+    # build the abc output
+    
+    abc = "T:" + tune_result.loc[0,"name"] + "\nR:" + tune_result.loc[0,"type"] +  "\nK:" + tune_result.loc[0,"mode"] + "\nM:" + tune_result.loc[0,"meter"]
+    #if tune_result.loc[0,"type"] == "jig":
+        # jig reel hornpipe
+    abc = abc + "\nL:1/8"
+    if not pd.isnull(tune_result.loc[0,"composer"]):
+         abc = abc + "\nC:" + tune_result.loc[0,"composer"]
+    abc = abc + "\n" + tune_result.loc[0,"abc"] + "\n"
+    print(abc)
+    
     print(base_tune_url + str(tune_id))
     print('\n')
     print('https://thesession.org/tunes/'+str(tune_id))
     print('\n')
+    
+    # write it out to a file
+    
+    with open(os.path.join(my_wd,clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
+      f.write("X:1\n"+abc*3)
+      
+      # linux bits
+      
+      # abc2midi 'Siobh_n McCaughey_s.abc' -o 'Siobh_n McCaughey_s.mid'
+      
+      # timidity 'Siobh_n McCaughey_s.mid' -Ow -o 'Siobh_n McCaughey_s.wav'
+      
+      # sox 'Siobh_n McCaughey_s.wav' 'Siobh_n McCaughey_s.mp3' speed 1.33
+      
+      # rm 'Siobh_n McCaughey_s.wav' 
+      # rm 'Siobh_n McCaughey_s.mid' 
+      
     enter_key()
     
     # print out a list of artists from recordings.csv who have recorded the tune.
