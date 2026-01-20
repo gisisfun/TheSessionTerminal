@@ -257,9 +257,11 @@ def main():
     
     # write it out to a file
     
-    with open(os.path.join(my_wd,clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
+    with open(os.path.join(my_wd,"mp3",clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
       f.write("X:1\n"+abc*3)
       
+    with open(os.path.join(my_wd,"pdf",clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
+      f.write("X:1\n"+abc)
       # linux bits
       
       # abc2midi 'Siobh_n McCaughey_s.abc' -o 'Siobh_n McCaughey_s.mid'
@@ -270,6 +272,15 @@ def main():
       
       # rm 'Siobh_n McCaughey_s.wav' 
       # rm 'Siobh_n McCaughey_s.mid' 
+      
+      # 1. Convert .abc to .ps (PostScript)
+      # abcm2ps tune.abc -O tune.ps
+
+       # 2. Convert .ps to .pdf
+       # ps2pdf tune.ps
+       #  fred = "\""+"here"+"\""
+             
+
       
     enter_key()
     
