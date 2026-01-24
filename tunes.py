@@ -74,6 +74,7 @@ import random as rand
 import os
 import time
 import re
+import subprocess
 
 # when 0 tune_id just create a random tune_id
 def rand_tune(session_tunes_df):
@@ -241,14 +242,12 @@ def main():
     
     # build the abc output
     
-    abc = "T:" + tune_result.loc[0,"name"] + "\nR:" + tune_result.loc[0,"type"] +  "\nK:" + tune_result.loc[0,"mode"] + "\nM:" + tune_result.loc[0,"meter"]
-    #if tune_result.loc[0,"type"] == "jig":
-        # jig reel hornpipe
-    abc = abc + "\nL:1/8"
+    header = "T:" + tune_result.loc[0,"name"] + "\nR:" + tune_result.loc[0,"type"]  + "\nM:" + tune_result.loc[0,"meter"] + "\nL:1/8" +  "\nK:" + tune_result.loc[0,"mode"]
+    
     if not pd.isnull(tune_result.loc[0,"composer"]):
-         abc = abc + "\nC:" + tune_result.loc[0,"composer"]
-    abc = abc + "\n" + tune_result.loc[0,"abc"] + "\n"
-    print(abc)
+         header = header + "\nC:" + tune_result.loc[0,"composer"]
+    abc_main = "\n" + tune_result.loc[0,"abc"]# + "\n"
+    print(header+abc_main)
     
     print(base_tune_url + str(tune_id))
     print('\n')
@@ -258,10 +257,10 @@ def main():
     # write it out to a file
     
     with open(os.path.join(my_wd,"mp3",clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
-      f.write("X:1\n"+abc*3)
+      f.write("X:1\n"+header+abc_main*3)
       
     with open(os.path.join(my_wd,"pdf",clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
-      f.write("X:1\n"+abc)
+      f.write("X:1\n"+header+abc_main)
       # linux bits
       
       # abc2midi 'Siobh_n McCaughey_s.abc' -o 'Siobh_n McCaughey_s.mid'
@@ -279,8 +278,26 @@ def main():
        # 2. Convert .ps to .pdf
        # ps2pdf tune.ps
        #  fred = "\""+"here"+"\""
-             
+      clean_fname = clean_filename(tune_result.loc[0,"name"])
+      tune_name = tune_result.loc[0,"name"]       
 
+      result = subprocess.run(["uname", "-a"], capture_output=True, text=True, check=False)
+      
+      if 'android' not in result.stdout:
+          command = ['bash',"abc2mp3.sh",clean_fname,tune_name]
+          result = subprocess.run(command,capture_output=True, text=True, check=False)
+          print(result.stdout)
+          
+          command = ['bash',"abc2pdf.sh",clean_fname]
+          result = subprocess.run(command,capture_output=True, text=True, check=False)
+          print(result.stdout)
+          
+      #oscheck = result.stdout
+      #clean_fname = clean_filename(tune_result.loc[0,"name"])
+      #tune_name = tune_result.loc[0,"name"]
+      #if 'android' not in oscheck:
+          #None
+          #subprocess.run(["abc2mp3.sh",clean_fname,tune_name])
       
     enter_key()
     
