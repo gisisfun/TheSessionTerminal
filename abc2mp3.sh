@@ -14,8 +14,10 @@ eval "timidity $mid -Ow -o $wav"
 eval "sox -q $wav $fastwav  tempo 1.33"
 eval "sox  $fastwav $mp3"
 eval "id3v2 -t  \"$title\" $mp3"
-eval "id3v2 -g \"folk\" $mp3"
-eval "id3v2  -l \"The Session\"  $mp3"
+eval "id3v2 -g 88 $mp3" 
+# celtic
+eval "id3v2  -A \"The Session\"  $mp3"
+eval "id3v2 -a  \"The Session\"  $mp3"
 
 eval "rm $wav"
 eval "rm $fastwav"

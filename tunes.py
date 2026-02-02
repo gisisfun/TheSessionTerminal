@@ -1,3 +1,4 @@
+
 # tunes.py
 
 # 1. Download the archived thesession.org archives
@@ -69,12 +70,18 @@
 # tunebooks 
 
 
+# issues:
+# tunes with an ' at the end'
+# tunes with extended character names
+# duplicate names with different tune ids
+
 import pandas as pd
 import random as rand
 import os
 import time
 import re
 import subprocess
+import unicodedata
 
 # when 0 tune_id just create a random tune_id
 def rand_tune(session_tunes_df):
@@ -82,16 +89,30 @@ def rand_tune(session_tunes_df):
     tunes_row = session_tunes_df.iloc[row]
     return str(tunes_row.tune_id)
 
+
+# Source - https://stackoverflow.com/a/518232
+
+# Posted by oefe, modified by community. See post 'Timeline' for change history
+
+# Retrieved 2026-01-25, License - CC BY-SA 3.0
+
+
+
+def strip_accents(s):
+   return ''.join(c for c in unicodedata.normalize('NFD', s)
+                  if unicodedata.category(c) != 'Mn')
+
+
 # print file update date and time
 
 def file_update_time(my_wd,fname,verbose):
-    ti_m = os.path.getmtime(os.path.join(my_wd,fname))
+    ti_m = os.path.getmtime(os.path.join(my_wd,'The Session Files',fname))
     m_ti = time.ctime(ti_m)
     if verbose:
         print(fname,'modified at',m_ti)
     
 def file_read(my_wd,fname):
-    df = pd.read_csv(os.path.join(my_wd,fname))
+    df = pd.read_csv(os.path.join(my_wd,'The Session Files',fname))
     return df
 
 
@@ -109,6 +130,18 @@ def clean_filename(filename, replacement="_"):
         return "default_name"
         
     return cleaned_filename
+
+# something that summarises search results
+
+def thing(result_df):
+    # dict_keys(['name', 'type', 'abc', 'mode', 'meter', 'composer', 'date', 'year', 'clean_fname', 'tune_id'])
+    #Index(['tuneset', 'date', 'member_id', 'username', 'settingorder', 'name','tune_id', 'setting_id', 'type', 'meter', 'mode', 'abc', 'tunebooks'],  dtype='object')
+    
+    # not: tunebooks, setting_id,settingorder, username, member_id, tuneset
+    
+    # needs composer, year, clean_fname, abc
+    
+    return {'hello':"there"}
 
 # the any key (enter)
 
@@ -137,7 +170,7 @@ def the_session_splash():
     """)
 
 def main():
-    debug = False
+    debug = True
     my_wd = os.getcwd()
     
     # configure urls for webserver
@@ -232,21 +265,29 @@ def main():
     
     tune_result = tunes_df.loc[tunes_df["tune_id"] == int(tune_id), ["name","type","abc","mode","meter","composer","date"]].reset_index(drop=True)
     tune_result["year"] = tune_result['date'].dt.year
-    print('year',tune_result.loc[0,"year"])
+    setting = tune_result.copy(deep=True).iloc[0].to_dict()
+    #setting = first_setting.to_dict()
+    setting["clean_fname"] = clean_filename(setting.get("name") + " " +  str(tune_id))
+    setting["tune_id"] = tune_id
+   
+    print(setting.get("name"))
+    print(setting.get("mode"))
+    print('year',setting.get("year"))
     
     # print only first setting of tune
     
     pd.set_option('display.max_colwidth', None)
-    print(tune_result.loc[0,"name"])
-    print('ABC')
+    
+    print('\nABC')
     
     # build the abc output
     
-    header = "T:" + tune_result.loc[0,"name"] + "\nR:" + tune_result.loc[0,"type"]  + "\nM:" + tune_result.loc[0,"meter"] + "\nL:1/8" +  "\nK:" + tune_result.loc[0,"mode"]
+    header = "T:" + setting.get("name") + "\nR:" + setting.get("type") + "\nM:" + setting.get("meter")+ "\nL:1/8" +  "\nK:" + setting.get("mode")
     
-    if not pd.isnull(tune_result.loc[0,"composer"]):
-         header = header + "\nC:" + tune_result.loc[0,"composer"]
-    abc_main = "\n" + tune_result.loc[0,"abc"]# + "\n"
+    if not pd.isnull(setting.get("composer")):
+         
+         header = header + "\nC:" + setting.get("composer")
+    abc_main = "\n" + setting.get("abc")# + "\n"
     print(header+abc_main)
     
     print(base_tune_url + str(tune_id))
@@ -254,50 +295,26 @@ def main():
     print('https://thesession.org/tunes/'+str(tune_id))
     print('\n')
     
-    # write it out to a file
-    
-    with open(os.path.join(my_wd,"mp3",clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
-      f.write("X:1\n"+header+abc_main*3)
-      
-    with open(os.path.join(my_wd,"pdf",clean_filename(tune_result.loc[0,"name"]+".abc")), "w") as f:
-      f.write("X:1\n"+header+abc_main)
-      # linux bits
-      
-      # abc2midi 'Siobh_n McCaughey_s.abc' -o 'Siobh_n McCaughey_s.mid'
-      
-      # timidity 'Siobh_n McCaughey_s.mid' -Ow -o 'Siobh_n McCaughey_s.wav'
-      
-      # sox 'Siobh_n McCaughey_s.wav' 'Siobh_n McCaughey_s.mp3' speed 1.33
-      
-      # rm 'Siobh_n McCaughey_s.wav' 
-      # rm 'Siobh_n McCaughey_s.mid' 
-      
-      # 1. Convert .abc to .ps (PostScript)
-      # abcm2ps tune.abc -O tune.ps
+    tune_name = setting.get("name") 
+    result = subprocess.run(["uname", "-a"], capture_output=True, text=True, check=False)
+    if 'android' not in result.stdout:
+          # write it out to a file
+        with open(os.path.join(my_wd,"mp3",setting.get('clean_fname') +".abc"), "w") as f:
+            f.write("X:1\n"+header+abc_main*3)
+        with open(os.path.join(my_wd,"pdf",setting.get('clean_fname')+".abc"), "w") as f:
+            f.write("X:1\n"+header+abc_main+"\n")
 
-       # 2. Convert .ps to .pdf
-       # ps2pdf tune.ps
-       #  fred = "\""+"here"+"\""
-      clean_fname = clean_filename(tune_result.loc[0,"name"])
-      tune_name = tune_result.loc[0,"name"]       
-
-      result = subprocess.run(["uname", "-a"], capture_output=True, text=True, check=False)
-      
-      if 'android' not in result.stdout:
-          command = ['bash',"abc2mp3.sh",clean_fname,tune_name]
-          result = subprocess.run(command,capture_output=True, text=True, check=False)
-          print(result.stdout)
+        mp3_command = ['bash',"abc2mp3.sh",setting.get('clean_fname'),tune_name]
+        mp3_result = subprocess.run(mp3_command,capture_output=True, text=True, check=False)
+        print(mp3_result.stdout)
           
-          command = ['bash',"abc2pdf.sh",clean_fname]
-          result = subprocess.run(command,capture_output=True, text=True, check=False)
-          print(result.stdout)
           
-      #oscheck = result.stdout
-      #clean_fname = clean_filename(tune_result.loc[0,"name"])
-      #tune_name = tune_result.loc[0,"name"]
-      #if 'android' not in oscheck:
-          #None
-          #subprocess.run(["abc2mp3.sh",clean_fname,tune_name])
+          #quoted_clean_name = '\"' + clean_fname + '\"'
+#          command = ['bash','abc2pdf.sh',clean_fname ]
+#          print('command is',*command)
+#          result = subprocess.run(command,capture_output=True, text=True, check=False)
+#          print(result)
+          
       
     enter_key()
     
@@ -319,20 +336,46 @@ def main():
     # print list of tunes related by sets.
     
     in_tunesets = sets_df[sets_df.tune_id == int(tune_id)]
+    
     tunesets = in_tunesets["tuneset"].to_list() 
 
     in_sets = sets_df[sets_df["tuneset"].isin(tunesets)]
     if len(in_sets) > 0:
-        filtered_sets = in_sets[["tune_id","name",]].copy(deep=True).reset_index(drop=True)
+        filtered_sets = in_sets[["tune_id","name",'type','tunebooks',"mode"]].copy(deep=True).reset_index(drop=True)
     
         url_list = in_sets["tune_id"].apply(lambda x: f"{base_tune_url}{x}").reset_index(drop = True)
         filtered_sets["url"] = url_list
         
+        
         print('\nlist of tunes in sets by frequency\n')
-        print('\n',len(filtered_sets),'tune(s) in sets')
+        
         
         # exclude 1st row as it is the tune of interest
         
-        print(filtered_sets.groupby(['name','url']).size().sort_values(ascending=False).iloc[1:].to_string())
+        all_output = filtered_sets.groupby(['tune_id' ,'name','url','type','tunebooks','mode']).size().to_frame().reset_index().sort_values(by=["type","tunebooks"],ascending=False).iloc[1:]
+        
+        tunes_of_type = all_output.copy(deep=True)
+        tunes_of_type = tunes_of_type [tunes_of_type["type"]==setting.get("type")]
+        if len(tunes_of_type)<1:
+            print('\nNo tunes of type',setting.get("type"),'\n')
+        else:
+            print('\nTunes of type',setting.get("type"),len(tunes_of_type),'\n')  
+            print(tunes_of_type.to_string())
+            
+        tunes_not_of_type = all_output.copy(deep=True)
+        tunes_not_of_type = tunes_not_of_type[tunes_not_of_type["type"]!=setting.get("type")]
+        if len(tunes_not_of_type)<1:
+            print('\nNo tunes in addition of type',setting.get("type"),'\n')
+        else:
+            print('\nTunes of type',list(tunes_not_of_type['type'].unique()),len(tunes_not_of_type),'\n')
+            print(tunes_not_of_type.to_string())
+        print('\n',len(tunes_not_of_type)+len(tunes_of_type),'tune(s) in all tune types')
+    else:
+            print('No tunes in sets')
+            
+        #new_output = pd.concat(["tunes_of_type","tunes_not_of_type"],ignore_index=True,sort=False,axis=0)
+        #output_string = new_output.to_string()
+        
+        
     
 main()
